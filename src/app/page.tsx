@@ -1,11 +1,12 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   connectWallet,
   checkIn,
   getCurrentId,
   getAttendees,
 } from '@/lib/contract';
+import { ethers } from 'ethers';
 
 export default function Home() {
   const [account, setAccount] = useState('');
@@ -15,6 +16,9 @@ export default function Home() {
   const [studentId, setStudentId] = useState('');
   const [attendees, setAttendees] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const [chainName, setChainName] = useState('');
+  const [chainId, setChainId] = useState('');
 
   function shortenAddress(addr: string) {
     return addr.slice(0, 6) + '...' + addr.slice(-4);
@@ -29,7 +33,17 @@ export default function Home() {
   async function connect() {
     const acc = await connectWallet();
     setAccount(acc);
-    refresh();
+    await refresh();
+    await loadNetwork();
+  }
+
+  async function loadNetwork() {
+    if (typeof window === 'undefined' || !(window as any).ethereum) return;
+
+    const provider = new ethers.BrowserProvider((window as any).ethereum);
+    const network = await provider.getNetwork();
+    setChainName(network.name);
+    setChainId(network.chainId.toString());
   }
 
   async function refresh() {
@@ -45,12 +59,16 @@ export default function Home() {
 
     try {
       const txHash = await checkIn(name, studentId);
-      setMsg(txHash);
+      setMsg(txHash); // tx 해시만 저장
       refresh();
     } finally {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    loadNetwork();
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-100 via-white to-blue-100 px-4">
@@ -75,17 +93,23 @@ export default function Home() {
         </h1>
         <br></br>
 
+        {/* ✅ 지갑 주소 + 복사 버튼 + 네트워크 표시 */}
         {account && (
-          <div className="flex items-center justify-center gap-2 text-gray-700 text-sm mb-3">
-            <span className="font-mono bg-gray-100 px-2 py-1 rounded">
-              {shortenAddress(account)}
-            </span>
-            <button
-              onClick={copyAddress}
-              className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded transition"
-            >
-              📋
-            </button>
+          <div className="text-center text-sm text-gray-700 mb-3 space-y-1">
+            <div className="flex items-center justify-center gap-2">
+              <span className="font-mono bg-gray-100 px-2 py-1 rounded">
+                {shortenAddress(account)}
+              </span>
+              <button
+                onClick={copyAddress}
+                className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded transition"
+              >
+                📋
+              </button>
+            </div>
+            <div className="text-gray-500">
+              네트워크: <b>{chainName}</b> ({chainId})
+            </div>
           </div>
         )}
 
@@ -128,7 +152,6 @@ export default function Home() {
           )}
         </button>
 
-        {/* ✅ 여기 수정된 메시지 UI */}
         {msg && (
           <div className="mt-6 p-4 rounded-xl bg-gray-50 text-gray-700 text-sm border leading-relaxed">
             <div className="font-medium text-green-700 mb-2">✅ 출석 완료!</div>
