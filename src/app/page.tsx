@@ -19,15 +19,29 @@ export default function Home() {
 
   const [chainName, setChainName] = useState('');
   const [chainId, setChainId] = useState('');
+  const [toast, setToast] = useState('');
 
   function shortenAddress(addr: string) {
     return addr.slice(0, 6) + '...' + addr.slice(-4);
   }
 
+  // ✅ 안전한 주소 복사 함수 (fallback 포함)
   async function copyAddress() {
-    await navigator.clipboard.writeText(account);
-    setMsg('📋 지갑 주소가 복사되었습니다.');
-    setTimeout(() => setMsg(''), 2000);
+    if (typeof window === 'undefined' || !account) return;
+
+    if (navigator?.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(account);
+    } else {
+      const textarea = document.createElement('textarea');
+      textarea.value = account;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      textarea.remove();
+    }
+
+    setToast('📋 지갑 주소가 복사되었습니다.');
+    setTimeout(() => setToast(''), 2000);
   }
 
   async function connect() {
@@ -59,7 +73,7 @@ export default function Home() {
 
     try {
       const txHash = await checkIn(name, studentId);
-      setMsg(txHash); // tx 해시만 저장
+      setMsg(txHash);
       refresh();
     } finally {
       setLoading(false);
@@ -91,9 +105,8 @@ export default function Home() {
         <h1 className="text-xl text-gray-500 dark:text-gray-400 text-center mt-1">
           92212893 | 안서진
         </h1>
-        <br></br>
+        <br />
 
-        {/* ✅ 지갑 주소 + 복사 버튼 + 네트워크 표시 */}
         {account && (
           <div className="text-center text-sm text-gray-700 mb-3 space-y-1">
             <div className="flex items-center justify-center gap-2">
@@ -107,6 +120,9 @@ export default function Home() {
                 📋
               </button>
             </div>
+
+            {toast && <div className="text-xs text-gray-500">{toast}</div>}
+
             <div className="text-gray-500">
               네트워크: <b>{chainName}</b> ({chainId})
             </div>
