@@ -1,36 +1,117 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## 🎓 출석 NFT 시스템 (Attendance NFT DApp)
 
-## Getting Started
+> 블록체인 기반 **출석 인증 시스템**<br></br>
+> 사용자는 **이름 + 학번** 입력 후, **메타마스크로 출석을 인증**<br></br>
+> 트랜잭션이 블록체인에 기록되고 **출석 내역이 누구나 검증 가능**
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### 🧾 주요 기능
+
+| 기능                         | 설명                                              |
+| ---------------------------- | ------------------------------------------------- |
+| ✅ MetaMask 지갑 연결        | 사용자의 이더리움 계정을 UI에서 확인 및 복사 가능 |
+| ✅ 출석 제출 (트랜잭션 발생) | 이름 + 학번을 컨트랙트에 저장                     |
+| ✅ 출석 횟수 표시            | 블록체인에서 실시간 조회                          |
+| ✅ 출석자 목록 조회          | 출석한 모든 사용자 표시 (이름 / 학번 / 지갑 주소) |
+| ✅ 트랜잭션 확인 링크 제공   | Etherscan에서 직접 출석 기록 확인 가능            |
+| ✅ 네트워크 자동 전환        | 메인넷이 아닌 **Sepolia 테스트넷**으로 자동 전환  |
+
+---
+
+### 🛠️ 사용 기술
+
+| 영역           | 기술                                          |
+| -------------- | --------------------------------------------- |
+| Smart Contract | Solidity                                      |
+| Frontend       | Next.js (App Router), React, Tailwind CSS     |
+| Web3 연동      | ethers.js v6, MetaMask Provider               |
+| 배포           | Vercel (Frontend), Sepolia Testnet (Contract) |
+
+---
+
+### 🌐 DApp 작동 흐름
+
+```mermaid
+flowchart TD
+
+User[사용자] -- 지갑 연결 --> MetaMask
+MetaMask -- Sign & Confirm --> Blockchain[(Sepolia)]
+
+User -- 이름/학번 입력 → 출석 요청 --> DAppUI
+DAppUI -- checkIn() --> Contract
+Contract -- Event 저장 --> Blockchain
+
+DAppUI -- getAttendees() --> Contract
+Contract -- 출석자 목록 → DAppUI --> User
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### ♦️ 컨트랙트 배포 (Sepolia)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Remix** 연결 → MetaMask 네트워크를 `Sepolia`로 설정
+2. **Compile** (0.8.x)
+3. **Deploy & Run** 탭
 
-## Learn More
+   - Environment: `Injected Provider (MetaMask)`
+   - Network: `Sepolia`
+   - `Deploy` → MetaMask Confirm
 
-To learn more about Next.js, take a look at the following resources:
+4. 배포 성공 후 **Contract Address 복사**
+5. 프로젝트의 `/src/lib/constants.ts` 수정:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```ts
+export const contractAddress = '여기에_배포한_주소_붙여넣기';
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+### 📜 Smart Contract (출석 기록 저장)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+contract AttendanceNFT {
+    struct Attendance {
+        address wallet;
+        string name;
+        string studentId;
+        uint256 timestamp;
+    }
+
+    mapping(address => mapping(uint256 => bool)) public checkedIn;
+    Attendance[] public records;
+    uint256 public totalCount;
+
+    event CheckedIn(address wallet, string name, string studentId, uint256 timestamp);
+
+    function checkIn(string memory name, string memory studentId) public {
+        uint256 today = block.timestamp / 1 days;
+
+        require(!checkedIn[msg.sender][today], "Already checked in today.");
+
+        checkedIn[msg.sender][today] = true;
+        records.push(Attendance(msg.sender, name, studentId, block.timestamp));
+
+        totalCount++;
+        emit CheckedIn(msg.sender, name, studentId, block.timestamp);
+    }
+
+    function getRecords() public view returns (Attendance[] memory) {
+        return records;
+    }
+}
+```
+
+---
+
+### 💻 실행 방법 (로컬)
+
+```bash
+git clone https://github.com/annseojin/attendance-nft.git
+cd attendance-nft
+npm install
+npm run dev
+```
