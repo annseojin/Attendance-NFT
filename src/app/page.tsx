@@ -25,7 +25,6 @@ export default function Home() {
     return addr.slice(0, 6) + '...' + addr.slice(-4);
   }
 
-  // ✅ 안전한 주소 복사 함수 (fallback 포함)
   async function copyAddress() {
     if (typeof window === 'undefined' || !account) return;
 
