@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react';
 import {
   connectWallet,
   checkIn,
-  getCurrentId,
-  getAttendees,
+  getTotalCount,
+  getRecords,
 } from '@/lib/contract';
 import { ethers } from 'ethers';
 
@@ -23,6 +23,10 @@ export default function Home() {
 
   function shortenAddress(addr: string) {
     return addr.slice(0, 6) + '...' + addr.slice(-4);
+  }
+
+  function formatDate(ts: number) {
+    return new Date(ts).toLocaleDateString('ko-KR');
   }
 
   async function copyAddress() {
@@ -60,9 +64,10 @@ export default function Home() {
   }
 
   async function refresh() {
-    const id = await getCurrentId();
+    const id = await getTotalCount();
     setCount(Number(id));
-    const list = await getAttendees();
+    const list = await getRecords();
+    list.sort((a: any, b: any) => b.timestamp - a.timestamp);
     setAttendees(list);
   }
 
@@ -97,11 +102,11 @@ export default function Home() {
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
-      <div className="w-full max-w-md bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-xl border border-white">
+      <div className="w-full max-w-2xl bg-white/80 backdrop-blur-xl p-10 rounded-3xl shadow-xl border border-white">
         <h1 className="text-3xl font-bold text-center mb-6">
           🎓 출석 NFT 시스템
         </h1>
-        <h1 className="text-xl text-gray-500 dark:text-gray-400 text-center mt-1">
+        <h1 className="text-xl text-gray-500 text-center mt-1">
           92212893 | 안서진
         </h1>
         <br />
@@ -180,13 +185,30 @@ export default function Home() {
           </div>
         )}
 
-        <div className="mt-8 bg-gray-50 p-4 rounded-xl border">
-          <div className="font-semibold mb-2">📋 출석자 목록</div>
-          {attendees.map((a, i) => (
-            <div key={i} className="text-sm border-b py-1">
-              {a.name} ({a.studentId}) — {shortenAddress(a.wallet)}
-            </div>
-          ))}
+        {/* ✅ 출석자 목록*/}
+        <div className="mt-8 overflow-x-auto rounded-xl border bg-white shadow-sm">
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-50 text-gray-600">
+              <tr>
+                <th className="px-4 py-2 text-left font-medium">이름</th>
+                <th className="px-4 py-2 text-left font-medium">학번</th>
+                <th className="px-4 py-2 text-left font-medium">지갑 주소</th>
+                <th className="px-4 py-2 text-left font-medium">날짜</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {attendees.map((a: any, i: number) => (
+                <tr key={i} className="hover:bg-gray-50">
+                  <td className="px-4 py-2">{a.name}</td>
+                  <td className="px-4 py-2">{a.studentId}</td>
+                  <td className="px-4 py-2 font-mono">
+                    {shortenAddress(a.wallet)}
+                  </td>
+                  <td className="px-4 py-2">{formatDate(a.timestamp)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
