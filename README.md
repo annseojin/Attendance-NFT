@@ -13,7 +13,7 @@
 | ✅ MetaMask 지갑 연결        | 사용자의 이더리움 계정을 UI에서 확인 및 복사 가능 |
 | ✅ 출석 제출 (트랜잭션 발생) | 이름 + 학번을 컨트랙트에 저장                     |
 | ✅ 출석 횟수 표시            | 블록체인에서 실시간 조회                          |
-| ✅ 출석자 목록 조회          | 출석한 모든 사용자 표시 (이름 / 학번 / 지갑 주소) |
+| ✅ 출석자 목록 조회          | 출석한 모든 사용자 표시 (이름 / 학번 / 지갑 주소/ 타임스탬프) |
 | ✅ 트랜잭션 확인 링크 제공   | Etherscan에서 직접 출석 기록 확인 가능            |
 | ✅ 네트워크 자동 전환        | 메인넷이 아닌 **Sepolia 테스트넷**으로 자동 전환  |
 
@@ -81,7 +81,7 @@ contract AttendanceNFT {
         uint256 timestamp;
     }
 
-    mapping(address => mapping(uint256 => bool)) public checkedIn;
+    mapping(address => mapping(uint256 => bool)) public checkedIn; 
     Attendance[] public records;
     uint256 public totalCount;
 
